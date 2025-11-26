@@ -1,0 +1,229 @@
+# PIPELINE DEFINITION
+# Name: model-evaluation
+# Description: Component 4: Model Evaluation
+#              Loads trained model, evaluates on test set, and saves metrics
+#              
+#              Inputs:
+#                  model_input (Input[Model]): Trained model from training component
+#                      - Random Forest model in .joblib format
+#                  
+#                  test_data (Input[Dataset]): Preprocessed test dataset
+#                      - CSV file with scaled features and target
+#                      - Contains ~4,128 samples
+#              
+#              Outputs:
+#                  metrics_output (Output[Metrics]): Evaluation metrics file
+#                      - JSON file containing all metrics
+#                      - Includes: R², RMSE, MAE, MSE, accuracy%
+#                  
+#                  r2_score (float): R-squared score (0 to 1)
+#                      - Measures how well model explains variance
+#                      - Higher is better (1.0 = perfect)
+#                  
+#                  rmse (float): Root Mean Squared Error
+#                      - Average prediction error
+#                      - Lower is better
+#                  
+#                  mae (float): Mean Absolute Error
+#                      - Average absolute prediction error
+#                      - Lower is better
+#                  
+#                  accuracy_percentage (float): R² score as percentage
+#              
+#              Metrics Saved to File:
+#                  - r2_score: Coefficient of determination
+#                  - rmse: Root Mean Squared Error
+#                  - mae: Mean Absolute Error
+#                  - mse: Mean Squared Error
+#                  - accuracy_percentage: R² as percentage
+#                  - test_samples: Number of test samples
+# Inputs:
+#    model_input: system.Model
+#    test_data: system.Dataset
+# Outputs:
+#    accuracy_percentage: float
+#    mae: float
+#    metrics_output: system.Metrics
+#    r2_score: float
+#    rmse: float
+components:
+  comp-model-evaluation:
+    executorLabel: exec-model-evaluation
+    inputDefinitions:
+      artifacts:
+        model_input:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+        test_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        metrics_output:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+      parameters:
+        accuracy_percentage:
+          parameterType: NUMBER_DOUBLE
+        mae:
+          parameterType: NUMBER_DOUBLE
+        r2_score:
+          parameterType: NUMBER_DOUBLE
+        rmse:
+          parameterType: NUMBER_DOUBLE
+deploymentSpec:
+  executors:
+    exec-model-evaluation:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - model_evaluation
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas==2.0.3'\
+          \ 'scikit-learn==1.3.0' 'joblib==1.3.0'  &&  python3 -m pip install --quiet\
+          \ --no-warn-script-location 'kfp==2.15.1' '--no-deps' 'typing-extensions>=3.7.4,<5;\
+          \ python_version<\"3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef model_evaluation(\n    model_input: Input[Model],\n    test_data:\
+          \ Input[Dataset],\n    metrics_output: Output[Metrics]\n) -> NamedTuple('EvaluationOutputs',\
+          \ [\n    ('r2_score', float), \n    ('rmse', float), \n    ('mae', float),\n\
+          \    ('accuracy_percentage', float)\n]):\n    \"\"\"\n    Component 4: Model\
+          \ Evaluation\n    Loads trained model, evaluates on test set, and saves\
+          \ metrics\n\n    Inputs:\n        model_input (Input[Model]): Trained model\
+          \ from training component\n            - Random Forest model in .joblib\
+          \ format\n\n        test_data (Input[Dataset]): Preprocessed test dataset\n\
+          \            - CSV file with scaled features and target\n            - Contains\
+          \ ~4,128 samples\n\n    Outputs:\n        metrics_output (Output[Metrics]):\
+          \ Evaluation metrics file\n            - JSON file containing all metrics\n\
+          \            - Includes: R\xB2, RMSE, MAE, MSE, accuracy%\n\n        r2_score\
+          \ (float): R-squared score (0 to 1)\n            - Measures how well model\
+          \ explains variance\n            - Higher is better (1.0 = perfect)\n\n\
+          \        rmse (float): Root Mean Squared Error\n            - Average prediction\
+          \ error\n            - Lower is better\n\n        mae (float): Mean Absolute\
+          \ Error\n            - Average absolute prediction error\n            -\
+          \ Lower is better\n\n        accuracy_percentage (float): R\xB2 score as\
+          \ percentage\n\n    Metrics Saved to File:\n        - r2_score: Coefficient\
+          \ of determination\n        - rmse: Root Mean Squared Error\n        - mae:\
+          \ Mean Absolute Error\n        - mse: Mean Squared Error\n        - accuracy_percentage:\
+          \ R\xB2 as percentage\n        - test_samples: Number of test samples\n\
+          \    \"\"\"\n    import pandas as pd\n    import joblib\n    from sklearn.metrics\
+          \ import mean_squared_error, r2_score, mean_absolute_error\n    import json\n\
+          \    from collections import namedtuple\n    import math\n\n    print(\"\
+          =\" * 70)\n    print(\"COMPONENT 4: MODEL EVALUATION\")\n    print(\"=\"\
+          \ * 70)\n\n    # Load model\n    model_file = model_input.path + '.joblib'\n\
+          \    model = joblib.load(model_file)\n    print(f\"\u2713 Model loaded from:\
+          \ {model_file}\")\n\n    # Load test data\n    test_df = pd.read_csv(test_data.path)\n\
+          \    X_test = test_df.drop('PRICE', axis=1)\n    y_test = test_df['PRICE']\n\
+          \n    print(f\"\u2713 Test data loaded:\")\n    print(f\"  - Samples: {X_test.shape[0]:,}\"\
+          )\n    print(f\"  - Features: {X_test.shape[1]}\")\n\n    # Make predictions\n\
+          \    print(f\"\\n\u2713 Generating predictions...\")\n    y_pred = model.predict(X_test)\n\
+          \    print(f\"  - Predictions generated for {len(y_pred):,} samples\")\n\
+          \n    # Calculate evaluation metrics\n    r2 = r2_score(y_test, y_pred)\n\
+          \    mse = mean_squared_error(y_test, y_pred)\n    rmse = math.sqrt(mse)\n\
+          \    mae = mean_absolute_error(y_test, y_pred)\n    accuracy = r2 * 100\n\
+          \n    # Display results\n    print(\"\\n\" + \"=\" * 70)\n    print(\"EVALUATION\
+          \ RESULTS\")\n    print(\"=\" * 70)\n    print(f\"\u2713 R\xB2 Score: {r2:.4f}\"\
+          )\n    print(f\"\u2713 Accuracy (R\xB2 as %): {accuracy:.2f}%\")\n    print(f\"\
+          \u2713 Root Mean Squared Error (RMSE): {rmse:.4f}\")\n    print(f\"\u2713\
+          \ Mean Absolute Error (MAE): {mae:.4f}\")\n    print(f\"\u2713 Mean Squared\
+          \ Error (MSE): {mse:.4f}\")\n    print(\"=\" * 70)\n    print(\"\\nInterpretation:\"\
+          )\n    print(f\"- Model explains {accuracy:.1f}% of variance in house prices\"\
+          )\n    print(f\"- Average prediction error: ${mae * 100000:,.2f}\")\n  \
+          \  print(f\"- Typical prediction error: ${rmse * 100000:,.2f}\")\n    print(\"\
+          =\" * 70)\n\n    # Save metrics to file\n    metrics = {\n        'r2_score':\
+          \ float(r2),\n        'rmse': float(rmse),\n        'mae': float(mae),\n\
+          \        'mse': float(mse),\n        'accuracy_percentage': float(accuracy),\n\
+          \        'test_samples': len(y_test)\n    }\n\n    with open(metrics_output.path,\
+          \ 'w') as f:\n        json.dump(metrics, f, indent=2)\n\n    print(f\"\\\
+          n\u2713 Metrics saved to: {metrics_output.path}\")\n\n    # Return outputs\n\
+          \    outputs = namedtuple('EvaluationOutputs', ['r2_score', 'rmse', 'mae',\
+          \ 'accuracy_percentage'])\n    return outputs(r2, rmse, mae, accuracy)\n\
+          \n"
+        image: python:3.9
+pipelineInfo:
+  name: model-evaluation
+root:
+  dag:
+    outputs:
+      artifacts:
+        metrics_output:
+          artifactSelectors:
+          - outputArtifactKey: metrics_output
+            producerSubtask: model-evaluation
+      parameters:
+        accuracy_percentage:
+          valueFromParameter:
+            outputParameterKey: accuracy_percentage
+            producerSubtask: model-evaluation
+        mae:
+          valueFromParameter:
+            outputParameterKey: mae
+            producerSubtask: model-evaluation
+        r2_score:
+          valueFromParameter:
+            outputParameterKey: r2_score
+            producerSubtask: model-evaluation
+        rmse:
+          valueFromParameter:
+            outputParameterKey: rmse
+            producerSubtask: model-evaluation
+    tasks:
+      model-evaluation:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-model-evaluation
+        inputs:
+          artifacts:
+            model_input:
+              componentInputArtifact: model_input
+            test_data:
+              componentInputArtifact: test_data
+        taskInfo:
+          name: model-evaluation
+  inputDefinitions:
+    artifacts:
+      model_input:
+        artifactType:
+          schemaTitle: system.Model
+          schemaVersion: 0.0.1
+      test_data:
+        artifactType:
+          schemaTitle: system.Dataset
+          schemaVersion: 0.0.1
+  outputDefinitions:
+    artifacts:
+      metrics_output:
+        artifactType:
+          schemaTitle: system.Metrics
+          schemaVersion: 0.0.1
+    parameters:
+      accuracy_percentage:
+        parameterType: NUMBER_DOUBLE
+      mae:
+        parameterType: NUMBER_DOUBLE
+      r2_score:
+        parameterType: NUMBER_DOUBLE
+      rmse:
+        parameterType: NUMBER_DOUBLE
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.15.1

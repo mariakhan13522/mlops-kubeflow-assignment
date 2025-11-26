@@ -1,0 +1,212 @@
+# PIPELINE DEFINITION
+# Name: model-training
+# Description: Component 3: Model Training
+#              Trains a Random Forest classifier on the training data and saves model artifact
+#              
+#              Inputs:
+#                  train_data (Input[Dataset]): Preprocessed training dataset
+#                      - CSV file with scaled features and target
+#                      - Contains ~16,512 samples
+#                  
+#                  n_estimators (int): Number of trees in Random Forest (default: 100)
+#                  max_depth (int): Maximum depth of trees (default: 10)
+#              
+#              Outputs:
+#                  model_output (Output[Model]): Trained Random Forest model
+#                      - Saved as .joblib file
+#                      - Contains 100 decision trees
+#                      - Ready for evaluation/deployment
+#                  
+#                  model_path (str): File path where model is saved
+#                  training_samples (int): Number of samples used for training
+#                  n_trees (int): Number of trees in the trained model
+#              
+#              Algorithm Details:
+#                  - Model: Random Forest Regressor
+#                  - n_estimators: 100 trees
+#                  - max_depth: 10 levels per tree
+#                  - min_samples_split: 5
+#                  - min_samples_leaf: 2
+#                  - random_state: 42 (for reproducibility)
+# Inputs:
+#    max_depth: int [Default: 10.0]
+#    n_estimators: int [Default: 100.0]
+#    train_data: system.Dataset
+# Outputs:
+#    model_output: system.Model
+#    model_path: str
+#    n_trees: int
+#    training_samples: int
+components:
+  comp-model-training:
+    executorLabel: exec-model-training
+    inputDefinitions:
+      artifacts:
+        train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        max_depth:
+          defaultValue: 10.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        n_estimators:
+          defaultValue: 100.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+    outputDefinitions:
+      artifacts:
+        model_output:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        model_path:
+          parameterType: STRING
+        n_trees:
+          parameterType: NUMBER_INTEGER
+        training_samples:
+          parameterType: NUMBER_INTEGER
+deploymentSpec:
+  executors:
+    exec-model-training:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - model_training
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas==2.0.3'\
+          \ 'scikit-learn==1.3.0' 'joblib==1.3.0'  &&  python3 -m pip install --quiet\
+          \ --no-warn-script-location 'kfp==2.15.1' '--no-deps' 'typing-extensions>=3.7.4,<5;\
+          \ python_version<\"3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef model_training(\n    train_data: Input[Dataset],\n    model_output:\
+          \ Output[Model],\n    n_estimators: int = 100,\n    max_depth: int = 10\n\
+          ) -> NamedTuple('TrainingOutputs', [\n    ('model_path', str), \n    ('training_samples',\
+          \ int),\n    ('n_trees', int)\n]):\n    \"\"\"\n    Component 3: Model Training\n\
+          \    Trains a Random Forest classifier on the training data and saves model\
+          \ artifact\n\n    Inputs:\n        train_data (Input[Dataset]): Preprocessed\
+          \ training dataset\n            - CSV file with scaled features and target\n\
+          \            - Contains ~16,512 samples\n\n        n_estimators (int): Number\
+          \ of trees in Random Forest (default: 100)\n        max_depth (int): Maximum\
+          \ depth of trees (default: 10)\n\n    Outputs:\n        model_output (Output[Model]):\
+          \ Trained Random Forest model\n            - Saved as .joblib file\n   \
+          \         - Contains 100 decision trees\n            - Ready for evaluation/deployment\n\
+          \n        model_path (str): File path where model is saved\n        training_samples\
+          \ (int): Number of samples used for training\n        n_trees (int): Number\
+          \ of trees in the trained model\n\n    Algorithm Details:\n        - Model:\
+          \ Random Forest Regressor\n        - n_estimators: 100 trees\n        -\
+          \ max_depth: 10 levels per tree\n        - min_samples_split: 5\n      \
+          \  - min_samples_leaf: 2\n        - random_state: 42 (for reproducibility)\n\
+          \    \"\"\"\n    import pandas as pd\n    from sklearn.ensemble import RandomForestRegressor\n\
+          \    import joblib\n    from collections import namedtuple\n\n    print(\"\
+          =\" * 70)\n    print(\"COMPONENT 3: MODEL TRAINING\")\n    print(\"=\" *\
+          \ 70)\n\n    # Load training data\n    train_df = pd.read_csv(train_data.path)\n\
+          \    X_train = train_df.drop('PRICE', axis=1)\n    y_train = train_df['PRICE']\n\
+          \n    print(f\"\u2713 Training data loaded:\")\n    print(f\"  - Samples:\
+          \ {X_train.shape[0]:,}\")\n    print(f\"  - Features: {X_train.shape[1]}\"\
+          )\n    print(f\"  - Feature names: {list(X_train.columns)}\")\n\n    # Initialize\
+          \ Random Forest model\n    print(f\"\\n\u2713 Initializing Random Forest\
+          \ Regressor...\")\n    print(f\"  - Number of trees (n_estimators): {n_estimators}\"\
+          )\n    print(f\"  - Max depth: {max_depth}\")\n    print(f\"  - Min samples\
+          \ split: 5\")\n    print(f\"  - Min samples leaf: 2\")\n    print(f\"  -\
+          \ Random state: 42\")\n\n    model = RandomForestRegressor(\n        n_estimators=n_estimators,\n\
+          \        max_depth=max_depth,\n        min_samples_split=5,\n        min_samples_leaf=2,\n\
+          \        random_state=42,\n        n_jobs=-1,\n        verbose=1\n    )\n\
+          \n    # Train the model\n    print(f\"\\n\u2713 Training model...\")\n \
+          \   print(f\"  (This may take 1-2 minutes)\")\n    model.fit(X_train, y_train)\n\
+          \n    # Save model artifact\n    model_file = model_output.path + '.joblib'\n\
+          \    joblib.dump(model, model_file)\n\n    print(f\"\\n\u2713 Model training\
+          \ completed!\")\n    print(f\"\u2713 Model saved to: {model_file}\")\n \
+          \   print(f\"\u2713 Model ready for evaluation\")\n    print(\"=\" * 70)\n\
+          \n    # Return outputs\n    outputs = namedtuple('TrainingOutputs', ['model_path',\
+          \ 'training_samples', 'n_trees'])\n    return outputs(model_file, len(X_train),\
+          \ n_estimators)\n\n"
+        image: python:3.9
+pipelineInfo:
+  name: model-training
+root:
+  dag:
+    outputs:
+      artifacts:
+        model_output:
+          artifactSelectors:
+          - outputArtifactKey: model_output
+            producerSubtask: model-training
+      parameters:
+        model_path:
+          valueFromParameter:
+            outputParameterKey: model_path
+            producerSubtask: model-training
+        n_trees:
+          valueFromParameter:
+            outputParameterKey: n_trees
+            producerSubtask: model-training
+        training_samples:
+          valueFromParameter:
+            outputParameterKey: training_samples
+            producerSubtask: model-training
+    tasks:
+      model-training:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-model-training
+        inputs:
+          artifacts:
+            train_data:
+              componentInputArtifact: train_data
+          parameters:
+            max_depth:
+              componentInputParameter: max_depth
+            n_estimators:
+              componentInputParameter: n_estimators
+        taskInfo:
+          name: model-training
+  inputDefinitions:
+    artifacts:
+      train_data:
+        artifactType:
+          schemaTitle: system.Dataset
+          schemaVersion: 0.0.1
+    parameters:
+      max_depth:
+        defaultValue: 10.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      n_estimators:
+        defaultValue: 100.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+  outputDefinitions:
+    artifacts:
+      model_output:
+        artifactType:
+          schemaTitle: system.Model
+          schemaVersion: 0.0.1
+    parameters:
+      model_path:
+        parameterType: STRING
+      n_trees:
+        parameterType: NUMBER_INTEGER
+      training_samples:
+        parameterType: NUMBER_INTEGER
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.15.1

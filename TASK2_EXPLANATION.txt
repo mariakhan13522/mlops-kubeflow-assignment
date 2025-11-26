@@ -1,0 +1,267 @@
+===========================================================================
+TASK 2: MODEL TRAINING COMPONENT - INPUT/OUTPUT EXPLANATION
+===========================================================================
+
+Student Name: Maria Khan
+
+===========================================================================
+COMPONENT OVERVIEW: model_training
+===========================================================================
+
+The model_training component is a Kubeflow pipeline component that trains
+a Random Forest Regressor model on preprocessed training data. It is 
+decorated with @component to make it a reusable Kubeflow component.
+
+Component Location: src/pipeline_components.py (Lines ~250-350)
+Component Type: Training Component
+Algorithm Used: Random Forest Regressor (Scikit-learn)
+
+===========================================================================
+INPUTS DEFINED FOR model_training COMPONENT
+===========================================================================
+
+INPUT 1: train_data
+--------------------
+Parameter Name: train_data
+Type: Input[Dataset]
+Description: Preprocessed training dataset from the preprocessing component
+
+Detailed Specifications:
+  • Format: CSV file
+  • Content: Scaled features + target variable (PRICE)
+  • Size: Approximately 16,512 samples (80% of 20,640 total)
+  • Features: 8 numerical features
+    - MedInc: Median income in block
+    - HouseAge: Median house age in block
+    - AveRooms: Average number of rooms per household
+    - AveBedrms: Average number of bedrooms per household
+    - Population: Block population
+    - AveOccup: Average house occupancy
+    - Latitude: House block latitude
+    - Longitude: House block longitude
+  • Target: PRICE (median house value in $100,000s)
+  • Preprocessing: Features scaled using StandardScaler (mean=0, std=1)
+
+Why Input[Dataset]?
+  ✓ Kubeflow automatically tracks data lineage
+  ✓ Enables automatic caching for faster re-runs
+  ✓ Provides data versioning capabilities
+  ✓ Makes data dependencies explicit in pipeline graph
+  ✓ Allows Kubeflow to manage data artifacts
+
+INPUT 2: n_estimators
+----------------------
+Parameter Name: n_estimators
+Type: int (integer)
+Description: Number of decision trees in the Random Forest
+Default Value: 100
+
+Detailed Specifications:
+  • Controls model complexity
+  • More trees = more accurate but slower training
+  • Typical range: 50-500
+  • Our choice: 100 (good balance of accuracy and speed)
+
+Why this parameter?
+  ✓ Makes the component configurable
+  ✓ Can tune without changing code
+  ✓ Allows hyperparameter experiments
+  ✓ Provides flexibility for different use cases
+
+INPUT 3: max_depth
+-------------------
+Parameter Name: max_depth
+Type: int (integer)
+Description: Maximum depth of each decision tree
+Default Value: 10
+
+Detailed Specifications:
+  • Controls how deep each tree can grow
+  • Deeper trees = more complex patterns but risk overfitting
+  • Typical range: 5-30
+  • Our choice: 10 (prevents overfitting)
+
+Why this parameter?
+  ✓ Controls model complexity
+  ✓ Helps prevent overfitting
+  ✓ Configurable for different datasets
+  ✓ Important hyperparameter for tuning
+
+===========================================================================
+OUTPUTS DEFINED FOR model_training COMPONENT
+===========================================================================
+
+OUTPUT 1: model_output
+-----------------------
+Parameter Name: model_output
+Type: Output[Model]
+Description: Trained Random Forest Regressor model
+
+Detailed Specifications:
+  • Format: Joblib serialized file (.joblib extension)
+  • Content: Complete trained model with 100 decision trees
+  • Size: Approximately 50-100 MB
+  • Contains: All learned weights, tree structures, and parameters
+  • Capability: Can make predictions on new unseen data
+
+Model Details:
+  • Algorithm: RandomForestRegressor (Scikit-learn)
+  • n_estimators: 100 trees
+  • max_depth: 10 levels per tree
+  • min_samples_split: 5 (minimum samples to split node)
+  • min_samples_leaf: 2 (minimum samples in leaf)
+  • random_state: 42 (for reproducibility)
+  • n_jobs: -1 (uses all CPU cores)
+
+Why Output[Model]?
+  ✓ Kubeflow automatically versions models
+  ✓ Enables model registry integration
+  ✓ Tracks model lineage (which data trained it)
+  ✓ Facilitates model comparison across runs
+  ✓ Supports model deployment workflows
+  ✓ Provides artifact management
+
+OUTPUT 2: model_path
+--------------------
+Parameter Name: model_path
+Type: str (string) - Return value
+Description: File system path where model is saved
+
+Detailed Specifications:
+  • Example: "/tmp/outputs/model_output/model.joblib"
+  • Used for logging and verification
+  • Helps with debugging pipeline issues
+  • Provides traceability
+
+Why return this?
+  ✓ Pipeline monitoring and observability
+  ✓ Helps debug if model loading fails
+  ✓ Useful for logging systems
+  ✓ Kubeflow UI displays this value
+
+OUTPUT 3: training_samples
+---------------------------
+Parameter Name: training_samples
+Type: int (integer) - Return value
+Description: Number of samples used for training
+
+Detailed Specifications:
+  • Value: ~16,512 (80% of 20,640)
+  • Helps verify correct data split
+  • Important metadata for model card
+
+Why return this?
+  ✓ Verifies data split was correct
+  ✓ Model metadata documentation
+  ✓ Helps assess if enough data for training
+  ✓ Useful for experiment tracking
+
+OUTPUT 4: n_trees
+-----------------
+Parameter Name: n_trees
+Type: int (integer) - Return value
+Description: Number of trees in trained Random Forest
+
+Detailed Specifications:
+  • Value: 100 (matches n_estimators input)
+  • Confirms model configuration
+  • Useful for experiment comparison
+
+Why return this?
+  ✓ Confirms hyperparameter setting
+  ✓ Experiment tracking
+  ✓ Model configuration documentation
+  ✓ Helps compare different model versions
+
+===========================================================================
+HOW INPUTS AND OUTPUTS WORK TOGETHER
+===========================================================================
+
+Data Flow:
+1. Component receives train_data (Input[Dataset]) from preprocessing
+2. Component reads CSV file from train_data.path
+3. Component loads data into pandas DataFrame
+4. Component trains Random Forest model with n_estimators and max_depth
+5. Component saves trained model using joblib
+6. Component writes model to model_output.path
+7. Component returns metadata (model_path, training_samples, n_trees)
+8. Kubeflow tracks all inputs, outputs, and metadata
+9. Next component (evaluation) can access model via model_output
+
+Pipeline Connection:
+preprocessing.outputs['train_data'] → model_training.inputs['train_data']
+model_training.outputs['model_output'] → evaluation.inputs['model_input']
+
+===========================================================================
+WHY THIS DESIGN? (Design Rationale)
+===========================================================================
+
+Input[Dataset] instead of file path:
+  ✓ Automatic data lineage tracking
+  ✓ Built-in caching for faster re-runs
+  ✓ Data versioning support
+  ✓ Clear dependency visualization in UI
+  ✓ Kubeflow manages artifact storage
+
+Output[Model] instead of file path:
+  ✓ Automatic model versioning
+  ✓ Model registry integration
+  ✓ Lineage tracking (which data trained it)
+  ✓ Easy model comparison
+  ✓ Deployment pipeline support
+  ✓ Artifact lifecycle management
+
+Configurable parameters (n_estimators, max_depth):
+  ✓ Reusability across different projects
+  ✓ Easy hyperparameter tuning
+  ✓ No code changes needed for experiments
+  ✓ Supports automated hyperparameter search
+
+Return values (metadata):
+  ✓ Pipeline observability
+  ✓ Experiment tracking
+  ✓ Debugging support
+  ✓ Model documentation
+  ✓ Compliance and auditing
+
+===========================================================================
+COMPONENT BENEFITS
+===========================================================================
+
+✓ Reusable: Can be used in multiple pipelines
+✓ Versioned: Each run creates new model version
+✓ Traceable: Complete lineage from data to model
+✓ Scalable: Runs in Kubernetes containers
+✓ Reproducible: Same inputs = same outputs
+✓ Isolated: Own container with own dependencies
+✓ Configurable: Parameters can be changed without code edits
+✓ Observable: Metrics and logs tracked automatically
+✓ Portable: Runs anywhere Kubeflow runs
+
+===========================================================================
+KUBEFLOW YAML COMPILATION
+===========================================================================
+
+The component was compiled to YAML using:
+  kfp.compiler.Compiler().compile()
+
+Generated file: components/model_training.yaml
+
+The YAML file contains:
+  • Component definition
+  • Container image specification
+  • Input parameter schemas
+  • Output artifact schemas
+  • Command to execute the component
+  • Environment variables
+  • Resource requirements
+
+This YAML can be:
+  ✓ Shared with other team members
+  ✓ Used in different pipelines
+  ✓ Version controlled in Git
+  ✓ Deployed to any Kubeflow cluster
+
+===========================================================================
+END OF EXPLANATION
+===========================================================================
