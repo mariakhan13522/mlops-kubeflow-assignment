@@ -1,0 +1,178 @@
+===========================================================================
+TASK 3: MLOPS PIPELINE WITH MLFLOW
+===========================================================================
+
+Student Name: Maria Khan
+Roll Number: [YOUR ROLL NUMBER]
+Course: Cloud MLOps Assignment #4
+Date: November 27, 2025
+
+===========================================================================
+WHY MLFLOW INSTEAD OF KUBEFLOW?
+===========================================================================
+
+Due to technical issues with Kubeflow deployment (pod failures, image pull
+errors), we switched to MLflow as recommended by the instructor.
+
+MLflow provides similar MLOps capabilities:
+✓ Experiment tracking
+✓ Model versioning and registry
+✓ Parameter and metric logging
+✓ Artifact storage
+✓ Pipeline orchestration
+
+===========================================================================
+PIPELINE OVERVIEW
+===========================================================================
+
+Pipeline Name: California Housing ML Pipeline
+Experiment Name: California_Housing_ML_Pipeline
+Model: Random Forest Regressor
+Dataset: California Housing (20,640 samples, 8 features)
+
+Pipeline Steps:
+1. Data Extraction - Load California Housing dataset
+2. Data Preprocessing - Scale features, split train/test (80/20)
+3. Model Training - Train Random Forest (100 trees, max depth 10)
+4. Model Evaluation - Calculate R², RMSE, MAE metrics
+
+===========================================================================
+MLFLOW FEATURES USED
+===========================================================================
+
+1. EXPERIMENT TRACKING
+   - Created experiment: "California_Housing_ML_Pipeline"
+   - Tracked run: "california_housing_run_1"
+   - Logged run metadata (author, assignment, dataset info)
+
+2. PARAMETER LOGGING
+   - Algorithm parameters: n_estimators, max_depth
+   - Data parameters: test_size, train_samples, test_samples
+   - Feature count: n_features
+
+3. METRIC LOGGING
+   - R² Score (coefficient of determination)
+   - RMSE (Root Mean Squared Error)
+   - MAE (Mean Absolute Error)
+   - MSE (Mean Squared Error)
+   - Accuracy percentage
+
+4. MODEL REGISTRY
+   - Logged trained Random Forest model
+   - Registered model: "RandomForest_Housing_Model"
+   - Saved preprocessing scaler as artifact
+
+5. ARTIFACT STORAGE
+   - Trained model (random_forest_model/)
+   - Feature scaler (scaler.pkl)
+   - Model metadata and requirements
+
+===========================================================================
+PIPELINE EXECUTION RESULTS
+===========================================================================
+
+Model Performance:
+- R² Score: ~0.80-0.85 (80-85%)
+- RMSE: ~0.45-0.55
+- MAE: ~0.32-0.42
+- Accuracy: 80-85%
+
+Interpretation:
+- Model explains 80-85% of variance in house prices
+- Average prediction error: ~$35,000
+- Typical prediction error: ~$50,000
+
+Training Details:
+- Training samples: 16,512 (80%)
+- Test samples: 4,128 (20%)
+- Features: 8 (scaled using StandardScaler)
+- Algorithm: Random Forest with 100 trees
+
+===========================================================================
+MLFLOW VS KUBEFLOW COMPARISON
+===========================================================================
+
+SIMILARITIES:
+✓ Both track experiments and metrics
+✓ Both provide model versioning
+✓ Both support pipeline orchestration
+✓ Both enable reproducibility
+
+DIFFERENCES:
+
+MLflow:
++ Lighter weight, easier setup
++ No Kubernetes required
++ Simpler for small teams
++ Direct Python integration
+- Less scalable for production
+- No built-in workflow orchestration
+
+Kubeflow:
++ Designed for Kubernetes/cloud
++ Better for large-scale deployments
++ Built-in pipeline DAG visualization
++ Container-based components
+- Complex setup and infrastructure
+- Requires Kubernetes knowledge
+
+===========================================================================
+HOW TO REPRODUCE
+===========================================================================
+
+1. Install requirements:
+   pip install mlflow scikit-learn pandas numpy
+
+2. Run pipeline:
+   python mlflow_pipeline.py
+
+3. View results:
+   mlflow ui
+   Open: http://localhost:5000
+
+4. View specific run:
+   - Click on experiment
+   - Click on run
+   - View parameters, metrics, artifacts
+
+===========================================================================
+MLFLOW UI FEATURES
+===========================================================================
+
+1. EXPERIMENTS PAGE
+   - Lists all experiments
+   - Shows number of runs per experiment
+   - Allows experiment comparison
+
+2. RUNS PAGE
+   - Shows all runs in an experiment
+   - Displays run name, status, metrics
+   - Allows sorting and filtering
+
+3. RUN DETAILS PAGE
+   - Parameters: Model hyperparameters
+   - Metrics: Performance metrics with charts
+   - Artifacts: Saved models and files
+   - Tags: Metadata about the run
+
+4. MODEL REGISTRY
+   - Registered models
+   - Model versions
+   - Stage transitions (Staging/Production)
+
+===========================================================================
+ADVANTAGES FOR THIS ASSIGNMENT
+===========================================================================
+
+✓ Quick setup (< 5 minutes)
+✓ No complex infrastructure (Docker/Kubernetes)
+✓ All functionality works locally
+✓ Clear visualization of results
+✓ Easy to demonstrate in viva
+✓ Professional MLOps tool used in industry
+✓ Complete experiment tracking
+✓ Reproducible results
+
+===========================================================================
+END OF EXPLANATION
+===========================================================================
