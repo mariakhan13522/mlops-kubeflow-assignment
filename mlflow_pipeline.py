@@ -15,7 +15,16 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import warnings
 import math
+import sys
 import os
+
+# Force UTF-8 encoding for Windows
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+
 
 warnings.filterwarnings('ignore')
 
@@ -292,10 +301,6 @@ if __name__ == "__main__":
     print("\n" + "=" * 75)
     print("CALIFORNIA HOUSING ML PIPELINE WITH MLFLOW")
     print("=" * 75)
-    print("Author: Maria Khan")
-    print("Roll Number: [YOUR ROLL NUMBER]")
-    print("Assignment: Cloud MLOps #4")
-    print("Date: November 27, 2025")
     print("=" * 75)
     
     try:
