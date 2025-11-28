@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/maria/Documents/mlops-kubeflow-assignment/mlruns/668137006056764993/models/m-c41c3d5ad7c54cc297069c1274962e70/artifacts
+creation_timestamp: 1764260664865
+experiment_id: '668137006056764993'
+last_updated_timestamp: 1764260679390
+model_id: m-c41c3d5ad7c54cc297069c1274962e70
+model_type: null
+name: random_forest_model
+source_run_id: cf1b16acb71e4d82ad990f85b125bcb0
+status: 2
+status_message: null

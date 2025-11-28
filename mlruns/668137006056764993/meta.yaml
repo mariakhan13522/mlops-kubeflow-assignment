@@ -1,0 +1,6 @@
+artifact_location: file:///C:/Users/maria/Documents/mlops-kubeflow-assignment/mlruns/668137006056764993
+creation_time: 1764260662537
+experiment_id: '668137006056764993'
+last_update_time: 1764260662537
+lifecycle_stage: active
+name: California_Housing_ML_Pipeline

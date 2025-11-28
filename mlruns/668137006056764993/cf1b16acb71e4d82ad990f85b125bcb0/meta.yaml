@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/maria/Documents/mlops-kubeflow-assignment/mlruns/668137006056764993/cf1b16acb71e4d82ad990f85b125bcb0/artifacts
+end_time: 1764260679762
+entry_point_name: ''
+experiment_id: '668137006056764993'
+lifecycle_stage: active
+run_id: cf1b16acb71e4d82ad990f85b125bcb0
+run_name: california_housing_run_1
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1764260662897
+status: 3
+tags: []
+user_id: maria

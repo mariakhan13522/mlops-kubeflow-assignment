@@ -1,0 +1,15 @@
+creation_timestamp: 1764260679484
+current_stage: None
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1764260679484
+model_id: m-c41c3d5ad7c54cc297069c1274962e70
+name: RandomForest_Housing_Model
+run_id: cf1b16acb71e4d82ad990f85b125bcb0
+run_link: null
+source: models:/m-c41c3d5ad7c54cc297069c1274962e70
+status: READY
+status_message: null
+storage_location: file:///C:/Users/maria/Documents/mlops-kubeflow-assignment/mlruns/668137006056764993/models/m-c41c3d5ad7c54cc297069c1274962e70/artifacts
+user_id: null
+version: 1
